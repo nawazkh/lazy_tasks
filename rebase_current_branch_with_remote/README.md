@@ -10,3 +10,17 @@
 - Export `UPSTREAM` to the root of the dir containing all the git repositories
 - In Makefile
   - update the `#VARIABLES` section for local testing
+
+## Things to do to run this utility
+
+I created an alias for my local pointing to the binary of `rebase_with_upstream.go`.
+My alias in `~/.zshrc` looks like below:
+
+```shell
+alias rebaseAll=$UPSTREAM/lazy_tasks/rebase_current_branch_with_remote/bin/rebaseAllDirs
+```
+
+**Note**: This alias hack assumes that
+
+- _lazy_tasks/rebase_current_branch_with_remote/_ was checked out to your `$UPSTREAM` location
+- `make all` was run at least once before creating the alias so that `lazy_tasks/rebase_current_branch_with_remote/bin/rebaseAllDirs` is created.
