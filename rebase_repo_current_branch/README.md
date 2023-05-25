@@ -1,10 +1,12 @@
 # Rebase repo current branch
 
-This folder aims to provide a script you can run at the root of all the git repos. This script would then attempt to rebase all the repos with their `main` or `master` branch.
+- This folder aims to provide a script named `rebaseAllDirs`.
+- Running `rebaseAllDirs` at the root of all the git repos will rebase the current checked out branch with `<remote>`/`<active development>`
+  - `<remote>` : script will figure out if the remote is `upstream` or `origin`
+  - `<active development>`: script will figure out if this is `master` or `main`
 
-**Note**: This script is intended to use with _forked-cloned_ repos instead of _cloned_ repos.
+## Needed Variables
 
-## Customizations
-
+- Export `UPSTREAM` to the root of the dir containing all the git repositories
 - In Makefile
-  - update the `#VARIABLES` section for your local testing
+  - update the `#VARIABLES` section for local testing
