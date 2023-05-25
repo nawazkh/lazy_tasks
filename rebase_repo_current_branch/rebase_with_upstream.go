@@ -20,8 +20,8 @@ var (
 )
 
 func init() {
-	infoLogger = log.New(os.Stdout, "INFO ", 5) // 5 -> 2023/05/24 14:52:51.507584, 4 -> 14:52:57.482177
-	errorLogger = log.New(os.Stdout, "ERROR ", 5)
+	infoLogger = log.New(os.Stdout, "INFO ", log.LstdFlags) // 5 -> 2023/05/24 14:52:51.507584, 4 -> 14:52:57.482177
+	errorLogger = log.New(os.Stdout, "ERROR ", log.LstdFlags)
 	flag.Parse()
 }
 
@@ -66,8 +66,7 @@ func run() int {
 	entries, err := os.ReadDir(*reposRoot)
 	dirPath, _ := filepath.Abs(*reposRoot)
 	if err != nil {
-		errorLogger.Printf("error in fetching directories from %s dir\n", *reposRoot)
-		errorLogger.Println(err)
+		errorLogger.Printf("error in fetching directories from %s dir. Error: %s\n\n", *reposRoot, err.Error())
 		return 1
 	}
 
@@ -106,16 +105,16 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 	if err != nil {
 		exitErr, ok := err.(*exec.ExitError)
 		if ok && exitErr.ExitCode() == 128 {
-			infoLogger.Println(dir, "dir is not a git repo")
-		} else {
-			errorLogger.Printf("Filed to execute git command on the dir %s. Error: %s\n\n", dir, err.Error())
+			return 1
+			// infoLogger.Println(dir, "dir is not a git repo")
 		}
+		errorLogger.Printf("Failed to execute git command on the dir %s. Error: %s\n\n", dir, err.Error())
 		return 1
 	}
 	if strings.TrimSpace(string(isGitRepo)) != "true" { // ignore other non git directories
 		return 1
 	}
-	infoLogger.Printf("Git repository:%s\n", dir)
+	// infoLogger.Printf("Git repository:%s\n", dir)
 
 	// get remotes of the repository
 	gitRemoteCmd := exec.Command("git", "remote", "show")
@@ -137,7 +136,7 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 	}
 
 	// fetch tracking remote branch
-	infoLogger.Printf("Remote: %s\n", remote)
+	// infoLogger.Printf("Remote: %s\n", remote)
 	gitFetchCmd := exec.Command("git", "fetch", remote)
 	gitFetchCmd.Dir = dir
 	_, err = gitFetchCmd.CombinedOutput()
@@ -163,28 +162,27 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 	}
 	remoteBranchList := strings.Fields(strings.TrimSpace(string(gitRemoteBranch))) // assuming remote will not have master and main set together
 	remoteBranch := strings.Split(remoteBranchList[1], "/")[2]
-	infoLogger.Printf("Remote Branch:%s\n", remoteBranch)
+	// infoLogger.Printf("Remote Branch:%s\n", remoteBranch)
 
 	// find default branch a.k.a current branch name
 	gitCurrentBranchCmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
 	gitCurrentBranchCmd.Dir = dir
 	currentBranchOp, err := gitCurrentBranchCmd.CombinedOutput()
 	if err != nil {
-		errorLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Error: %s\n\n", dir, err.Error())
+		errorLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Error: %s\n\n", dir, err)
 		return 1
 	}
 	currentBranch := strings.TrimSpace(string(currentBranchOp))
-	infoLogger.Printf("Current Branch: %s", currentBranch)
+	// infoLogger.Printf("Current Branch: %s", currentBranch)
 
 	// run rebase on current branch using remote/remoteBranch
 	gitRebaseCmd := exec.Command("git", "rebase", remote+"/"+remoteBranch)
 	gitRebaseCmd.Dir = dir
 	_, err = gitRebaseCmd.CombinedOutput()
 	if err != nil {
-		errorLogger.Println("Error in performing rebase for dir", dir)
-		errorLogger.Printf("Error:%s\n\n", err.Error())
+		errorLogger.Printf("Error in performing rebase for dir %s. Error %s\n\n", dir, err.Error())
 		return 1
 	}
-	infoLogger.Printf("Successfully rebased and updated local/%s with %s/%s\n", currentBranch, remote, remoteBranch)
+	infoLogger.Printf("Successfully rebased and updated local/%s with %s/%s\n\n", currentBranch, remote, remoteBranch)
 	return 0
 }
