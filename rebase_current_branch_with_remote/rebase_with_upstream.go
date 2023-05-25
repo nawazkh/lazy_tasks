@@ -113,6 +113,7 @@ func performRebasing(id int, wg *sync.WaitGroup, resultChan chan<- int, dirPath,
 	}
 	// infoLogger.Printf("Git repository:%s\n", dir)
 
+	// whats the remote? upstream or origin?
 	remote := ""
 	if *customRemote == "" {
 		// get remotes of the repository
@@ -149,6 +150,24 @@ func performRebasing(id int, wg *sync.WaitGroup, resultChan chan<- int, dirPath,
 	}
 	// infoLogger.Println(string(gitFetch))
 
+	// find default branch a.k.a current branch name
+	gitCurrentBranchCmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
+	gitCurrentBranchCmd.Dir = dir
+	currentBranchOp, err := gitCurrentBranchCmd.CombinedOutput()
+	if err != nil {
+		exitErr, ok := err.(*exec.ExitError)
+		if ok && exitErr.ExitCode() == 128 {
+			infoLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Check dir manually.\n", dir)
+			resultChan <- 0
+			return
+		}
+		errorLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Error: %s\n", dir, err)
+		resultChan <- 1
+		return
+	}
+	currentBranch := strings.TrimSpace(string(currentBranchOp))
+	// infoLogger.Printf("Current Branch: %s", currentBranch)
+
 	remoteBranch := ""
 	if *customRemoteBranch == "" {
 		// remote master or main branch?
@@ -169,35 +188,30 @@ func performRebasing(id int, wg *sync.WaitGroup, resultChan chan<- int, dirPath,
 		}
 		remoteBranchList := strings.Fields(strings.TrimSpace(string(gitRemoteBranch))) // assuming remote will not have master and main set together
 		remoteBranch = strings.Split(remoteBranchList[1], "/")[2]
+
+		// if the current branch is not branched out of master or main.
+		gitRemoteParentBCmd := exec.Command("git", "parent")
+		gitRemoteParentBCmd.Dir = dir
+		gitRemoteParent, err := gitRemoteParentBCmd.CombinedOutput()
+		if err != nil {
+			errorLogger.Printf("No parent found for dir %s, branch:%s", dir, currentBranch)
+		}
+		remoteParentParsed := strings.TrimSpace(string(gitRemoteParent))
+		if strings.Contains(remoteParentParsed, "release-") {
+			remoteBranch = remoteParentParsed
+		}
+
 		// infoLogger.Printf("Remote Branch:%s\n", remoteBranch)
 	} else {
 		remoteBranch = *customRemoteBranch
 	}
-
-	// find default branch a.k.a current branch name
-	gitCurrentBranchCmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
-	gitCurrentBranchCmd.Dir = dir
-	currentBranchOp, err := gitCurrentBranchCmd.CombinedOutput()
-	if err != nil {
-		exitErr, ok := err.(*exec.ExitError)
-		if ok && exitErr.ExitCode() == 128 {
-			infoLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Check dir manually.\n", dir)
-			resultChan <- 0
-			return
-		}
-		errorLogger.Printf("Failed to execute git symbolic-ref on the dir %s. Error: %s\n", dir, err)
-		resultChan <- 1
-		return
-	}
-	currentBranch := strings.TrimSpace(string(currentBranchOp))
-	// infoLogger.Printf("Current Branch: %s", currentBranch)
 
 	// run rebase on current branch using remote/remoteBranch
 	gitRebaseCmd := exec.Command("git", "rebase", remote+"/"+remoteBranch)
 	gitRebaseCmd.Dir = dir
 	_, err = gitRebaseCmd.CombinedOutput()
 	if err != nil {
-		errorLogger.Printf("Error in performing rebase for dir %s. Error %s\n", dir, err.Error())
+		errorLogger.Printf("Error in performing rebase for dir %s, branch:%s with %s:%s. Error %s\n", dir, currentBranch, remote, remoteBranch, err.Error())
 		resultChan <- 1
 		return
 	}

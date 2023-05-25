@@ -30,6 +30,12 @@ INFO 2023/05/25 10:31:35 Successfully rebased and updated blinds-manager's local
 - Export `UPSTREAM` to the root of the dir containing all the git repositories
 - In Makefile
   - update the `#VARIABLES` section for local testing
+- Set `parent` alias in your `~/.gitconfig`. Script will use this command to get the parent of the branch your current-branch has branched off of (wow, so many branches)
+
+```shell
+[alias]
+    parent = "!git show-branch 2>&1 | grep '*' | grep -v \"$(git rev-parse --abbrev-ref HEAD)\" | head -n1 | sed 's/.*\\[\\(.*\\)\\].*/\\1/' | sed 's/[\\^~].*//' #"
+```
 
 ## Things to do to run this utility
 
