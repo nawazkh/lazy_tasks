@@ -176,6 +176,6 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 		errorLogger.Printf("Error in performing rebase for dir %s. Error %s\n\n", dir, err.Error())
 		return 1
 	}
-	infoLogger.Printf("Successfully rebased and updated local/%s with %s/%s\n\n", currentBranch, remote, remoteBranch)
+	infoLogger.Printf("Successfully rebased and updated %s's local/%s with %s/%s\n\n", dirName, currentBranch, remote, remoteBranch)
 	return 0
 }
