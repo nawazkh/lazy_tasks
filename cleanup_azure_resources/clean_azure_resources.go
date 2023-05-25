@@ -1,13 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"sync"
 )
 
 var (
