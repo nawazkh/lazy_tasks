@@ -46,7 +46,7 @@ check-env:
     ifndef AZURE_CLIENT_SECRET
         $(error AZURE_CLIENT_SECRET is not set in the environment)
     endif
-	ifndef AZURE_TENANT_ID
+    ifndef AZURE_TENANT_ID
         $(error AZURE_TENANT_ID is not set in the environment)
     endif
 
