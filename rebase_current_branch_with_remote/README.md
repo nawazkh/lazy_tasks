@@ -5,6 +5,26 @@
   - `<remote>` : script will figure out if the remote is `upstream` or `origin`
   - `<active development>`: script will figure out if this is `master` or `main`
 
+## Sample Output
+
+```shell
+❯ rebaseAll
+INFO 2023/05/25 10:31:32 Root Dir: "/Users/nawazhussain/msftcode"
+INFO 2023/05/25 10:31:33 Successfully rebased and updated goss's local/master with upstream/master
+INFO 2023/05/25 10:31:33 Successfully rebased and updated image-builder's local/error_out_cluster_create with upstream/master
+INFO 2023/05/25 10:31:33 Successfully rebased and updated org's local/main with upstream/main
+INFO 2023/05/25 10:31:33 Successfully rebased and updated k8s.io's local/add_nawazkh_to_capz_team with upstream/main
+INFO 2023/05/25 10:31:33 Successfully rebased and updated windows-testing's local/master with upstream/master
+INFO 2023/05/25 10:31:33 Successfully rebased and updated test-infra's local/add_area_labels_capi with upstream/master
+INFO 2023/05/25 10:31:33 Successfully rebased and updated ip-masq-agent-v2's local/master with upstream/master
+INFO 2023/05/25 10:31:33 Failed to execute git symbolic-ref on the dir /Users/nawazhussain/msftcode/azure-container-networking. Check dir manually.
+INFO 2023/05/25 10:31:33 Successfully rebased and updated aks-engine's local/test with upstream/master
+INFO 2023/05/25 10:31:33 Successfully rebased and updated cluster-api-provider-azure's local/main with upstream/main
+INFO 2023/05/25 10:31:33 Successfully rebased and updated cluster-api's local/add_area_labels with upstream/main
+INFO 2023/05/25 10:31:34 Successfully rebased and updated lazy_tasks's local/main with origin/main
+INFO 2023/05/25 10:31:35 Successfully rebased and updated blinds-manager's local/main with origin/main
+```
+
 ## Needed Variables
 
 - Export `UPSTREAM` to the root of the dir containing all the git repositories
