@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	infoLogger      *log.Logger
-	errorLogger     *log.Logger
-	reposRoot       = flag.String("reposRoot", "", "The root of all the repos you want to rebase with UPSTREAM.")
-	defaultUpstream = flag.String("defaultUpstream", "main", "The default source of truth at UPSTREAM. It could be `main` or `master`.")
+	infoLogger         *log.Logger
+	errorLogger        *log.Logger
+	reposRoot          = flag.String("reposRoot", "", "The root of all the repos you want to rebase with UPSTREAM.")
+	customRemote       = flag.String("customRemote", "", "The custom remote. It is generally \"upstream\" or \"origin\"")
+	customRemoteBranch = flag.String("customRemoteBranch", "", "The custom remote branch. It is generally \"master\" or \"main\"")
 )
 
 func init() {
@@ -31,16 +32,6 @@ func main() {
 
 func run() int {
 	// Setup
-	// find the right root
-	if reposRoot == nil {
-		errorLogger.Println("reposRoot is nil")
-		return 1
-	}
-
-	if defaultUpstream == nil {
-		errorLogger.Println("defaultUpstream is nil")
-		return 1
-	}
 
 	if *reposRoot == "" {
 		value, isDefined := os.LookupEnv("UPSTREAM")
@@ -54,15 +45,8 @@ func run() int {
 		}
 	}
 
-	// TODO: uncomment the below lines if you want to enforce rebasing with `main` or `master` branch only
-	// if !(*defaultUpstream == "main" || *defaultUpstream == "master") {
-	// 	errorLogger.Println("default upstream bran")
-	// }
-
 	// get all the dirs in root
 	infoLogger.Printf("Root Dir: \"%s\"\n\n", *reposRoot)
-	// infoLogger.Printf("\"%s\" <------ Upstream's branch to rebase existing branch with\n\n\n", *defaultUpstream)
-
 	entries, err := os.ReadDir(*reposRoot)
 	dirPath, _ := filepath.Abs(*reposRoot)
 	if err != nil {
@@ -116,27 +100,31 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 	}
 	// infoLogger.Printf("Git repository:%s\n", dir)
 
-	// get remotes of the repository
-	gitRemoteCmd := exec.Command("git", "remote", "show")
-	gitRemoteCmd.Dir = dir
-	gitRemote, err := gitRemoteCmd.CombinedOutput()
-	if err != nil {
-		errorLogger.Printf("Filed to execute git remote show on the dir %s. Error: %s\n\n", dir, err.Error())
-		return 1
-	}
-	remotes := strings.Fields(strings.TrimSpace(string(gitRemote)))
-	// infoLogger.Println(remotes)
-
-	// check if upstream exists else select origin
 	remote := ""
-	if slices.Contains(remotes, "upstream") {
-		remote = "upstream"
+	if *customRemote == "" {
+		// get remotes of the repository
+		gitRemoteCmd := exec.Command("git", "remote", "show")
+		gitRemoteCmd.Dir = dir
+		gitRemote, err := gitRemoteCmd.CombinedOutput()
+		if err != nil {
+			errorLogger.Printf("Filed to execute git remote show on the dir %s. Error: %s\n\n", dir, err.Error())
+			return 1
+		}
+		remotes := strings.Fields(strings.TrimSpace(string(gitRemote)))
+		// infoLogger.Println(remotes)
+
+		// check if upstream exists else select origin
+		if slices.Contains(remotes, "upstream") {
+			remote = "upstream"
+		} else {
+			remote = "origin"
+		}
 	} else {
-		remote = "origin"
+		remote = *customRemote
 	}
+	// infoLogger.Printf("Remote: %s\n", remote)
 
 	// fetch tracking remote branch
-	// infoLogger.Printf("Remote: %s\n", remote)
 	gitFetchCmd := exec.Command("git", "fetch", remote)
 	gitFetchCmd.Dir = dir
 	_, err = gitFetchCmd.CombinedOutput()
@@ -146,23 +134,28 @@ func performRebasing(id int, wg *sync.WaitGroup, dirPath, dirName string) int {
 	}
 	// infoLogger.Println(string(gitFetch))
 
-	// remote master or main branch?
-	gitRemoteBCmd := exec.Command("git", "ls-remote", "--exit-code", "--heads", remote, "master", remote, "main")
-	gitRemoteBCmd.Dir = dir
-	gitRemoteBranch, err := gitRemoteBCmd.CombinedOutput()
-	if err != nil {
-		exitErr, ok := err.(*exec.ExitError)
-		if ok && exitErr.ExitCode() == 2 {
-			errorLogger.Printf("no matching refs are found in %s master or for %s main. Error: %s \n\n", remote, remote, err.Error())
-			return 1
-		} else {
-			errorLogger.Printf("Unable to run git ls-remote on dir:%s. Error:%s\n\n", dir, err.Error())
-			return 1
+	remoteBranch := ""
+	if *customRemoteBranch == "" {
+		// remote master or main branch?
+		gitRemoteBCmd := exec.Command("git", "ls-remote", "--exit-code", "--heads", remote, "master", remote, "main")
+		gitRemoteBCmd.Dir = dir
+		gitRemoteBranch, err := gitRemoteBCmd.CombinedOutput()
+		if err != nil {
+			exitErr, ok := err.(*exec.ExitError)
+			if ok && exitErr.ExitCode() == 2 {
+				errorLogger.Printf("no matching refs are found in %s master or for %s main. Error: %s \n\n", remote, remote, err.Error())
+				return 1
+			} else {
+				errorLogger.Printf("Unable to run git ls-remote on dir:%s. Error:%s\n\n", dir, err.Error())
+				return 1
+			}
 		}
+		remoteBranchList := strings.Fields(strings.TrimSpace(string(gitRemoteBranch))) // assuming remote will not have master and main set together
+		remoteBranch = strings.Split(remoteBranchList[1], "/")[2]
+		// infoLogger.Printf("Remote Branch:%s\n", remoteBranch)
+	} else {
+		remoteBranch = *customRemoteBranch
 	}
-	remoteBranchList := strings.Fields(strings.TrimSpace(string(gitRemoteBranch))) // assuming remote will not have master and main set together
-	remoteBranch := strings.Split(remoteBranchList[1], "/")[2]
-	// infoLogger.Printf("Remote Branch:%s\n", remoteBranch)
 
 	// find default branch a.k.a current branch name
 	gitCurrentBranchCmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")

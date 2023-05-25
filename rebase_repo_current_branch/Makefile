@@ -15,7 +15,6 @@ SRCS := $(shell find $(SRC_DIR) -name '*.go')
 # TODO: update this in your local testing
 # Variables
 REPOSROOT := "/Users/nawazhussain/msftcode"
-DEFAULTUPSTREAM := "main"
 
 .PHONY: all build clean test
 
@@ -39,4 +38,4 @@ clean:
 
 test: clean all
 	@echo "Running \"${BINARY_NAME}\""
-	@./${BIN_DIR}/${BINARY_NAME} --reposRoot $(REPOSROOT) --defaultUpstream $(DEFAULTUPSTREAM)
+	@./${BIN_DIR}/${BINARY_NAME} --reposRoot $(REPOSROOT)
