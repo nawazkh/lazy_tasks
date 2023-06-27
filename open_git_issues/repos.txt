@@ -1,0 +1,3 @@
+nawazkh/cluster-api-provider-azure
+nawazkh/lazy_tasks
+kubernetes-sigs/cluster-api-provider-azure
