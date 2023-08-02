@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -28,6 +28,7 @@ func main() {
 	repoFile := flag.String("file", "", "Path to the text file containing the list of repositories")
 	issueTitle := flag.String("title", "", "Issue title")
 	issueFile := flag.String("body", "", "Path to the markdown file containing the issue body")
+	dryRun := flag.String("dryRun", "", "Dry run")
 	flag.Parse()
 
 	if *token == "" {
@@ -47,7 +48,7 @@ func main() {
 
 	issueBody := ""
 	if *issueFile != "" {
-		fileContent, err := ioutil.ReadFile(*issueFile)
+		fileContent, err := os.ReadFile(*issueFile)
 		if err != nil {
 			fmt.Printf("Failed to read file: %s\n", err)
 			os.Exit(1)
@@ -60,6 +61,29 @@ func main() {
 		fmt.Printf("Failed to read repository list: %s\n", err)
 		os.Exit(1)
 	}
+
+	if *dryRun == "true" {
+		fmt.Printf("\n\n")
+		fmt.Println("###############################################")
+		fmt.Println("Dry run is enabled. No issues will be created.")
+		fmt.Println("###############################################")
+		fmt.Printf("\n\n")
+	}
+
+	fmt.Println("\n\nCreating issues for the following repositories:")
+	fmt.Println(strings.Join(repoList, "\n"))
+	fmt.Printf("\n")
+
+	if *dryRun != "true" {
+		fmt.Println("Shall I continue creating issues? (y/n)")
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" {
+			fmt.Println("Aborting...")
+			os.Exit(0)
+		}
+	}
+	fmt.Printf("\n")
 
 	for _, repo := range repoList {
 		issue := Issue{
@@ -74,14 +98,21 @@ func main() {
 		}
 
 		url := fmt.Sprintf("%s/repos/%s/issues", baseURL, repo)
+		if *dryRun == "true" {
+			continue
+		}
+
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(issueJSON))
-		fmt.Println("request will be sent to", req.URL)
+		// fmt.Println("Request will be sent at:", req.URL)
 		if err != nil {
 			fmt.Printf("Failed to create request: %s\n", err)
 			os.Exit(1)
 		}
 
+		req.Header.Set("Accept", "application/vnd.github+json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *token))
+		req.Header.Set("X-Github-Api-Version", "2022-11-28")
+		req.Header.Set("User-Agent", "open_git_issues")
 		req.Header.Set("Content-Type", "application/json")
 
 		client := &http.Client{}
@@ -93,9 +124,9 @@ func main() {
 
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusCreated {
-			fmt.Printf("Failed to create issue for repository '%s'. Status code: %d, Response: Status:%s\n\n\n", repo, resp.StatusCode, resp.Status)
+			fmt.Printf("Failed to create issue for repository '%s'\nStatus code: %d\nStatus:%s\n\n\n", repo, resp.StatusCode, resp.Status)
 		} else {
-			responseBody, err := ioutil.ReadAll(resp.Body)
+			responseBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Printf("Failed to read response body: %s\n", err)
 				os.Exit(1)
@@ -108,7 +139,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			fmt.Printf("Issue created for repository '%s'. URL: %s\n\n\n", repo, issueResponse.HTMLURL)
+			fmt.Printf("\nIssue created for repository '%s'\nURL: %s\n", repo, issueResponse.HTMLURL)
 		}
 	}
 }
@@ -124,7 +155,11 @@ func readLines(filename string) ([]string, error) {
 	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		lines = append(lines, strings.TrimSpace(scanner.Text()))
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		lines = append(lines, line)
 	}
 
 	return lines, scanner.Err()

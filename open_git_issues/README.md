@@ -39,3 +39,6 @@ Failed to create issue for repository 'nawazkh/cluster-api-provider-azure'. Stat
 request will be sent to https://api.github.com/repos/nawazkh/lazy_tasks/issues
 Issue created for repository 'nawazkh/lazy_tasks'. URL: https://github.com/nawazkh/lazy_tasks/issues/5
 ```
+
+https://github.com/nawazkh/lazy_tasks
+https://github.com/repos/nawazkh/lazy_tasks/issues
