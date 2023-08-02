@@ -38,4 +38,4 @@ clean:
 
 test: clean all
 	@echo "Running \"${BINARY_NAME}\""
-	@./${BIN_DIR}/${BINARY_NAME} --dryRun="false" --token=${GITHUB_ISSUE_OPENER_TOKEN} --file ./repos.txt --title "Testing testing" --body issue_body.md
+	@./${BIN_DIR}/${BINARY_NAME} --dryRun="true" --token=${GITHUB_ISSUE_OPENER_TOKEN} --file ./repos.txt --title "Testing testing" --body issue_body.md
