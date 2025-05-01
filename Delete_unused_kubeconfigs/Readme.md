@@ -67,3 +67,38 @@ The script provides clear, color-coded output indicating:
 ## Note
 
 Always ensure you have necessary permissions and valid backup before running cleanup scripts on your Kubernetes configuration.
+
+## Sample output
+```bash
+❯ delKConfigs=/Users/nawazhussain/msftcode/DeleteUnusedKubeconfigs.sh
+❯ delKConfigs
+
+Backup of kubeconfig created at /Users/nawazhussain/.kube/backups/kubeconfig_backup_2025-05-01_03-22-49_PM
+
+
+Current context: aks-mgmt-1745538551
+
+--- Starting Context Cleanup ---
+Removing unused context: aks-mgmt-1744307866
+.
+.
+.
+Removing unused context: capz-e2e-9
+--- Context Cleanup Completed ---
+
+--- Starting Cluster Cleanup ---
+Removing unused cluster: aks-mgmt-1744307866
+.
+.
+.
+--- Cluster Cleanup Completed ---
+
+--- Starting User Cleanup ---
+Removing unused user: clusterUser_aks-mgmt-1744307866_aks-mgmt-1744307866
+.
+.
+.
+--- User Cleanup Completed ---
+
+--- All cleanups completed successfully! Current context: aks-mgmt-1745538551 ---
+```
